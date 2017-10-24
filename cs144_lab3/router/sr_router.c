@@ -193,6 +193,7 @@ struct sr_rt * LPM(struct sr_rt * r_table,uint32_t  ip_dst){
                   max = cur->mask.s_addr;
               }
           }
+          cur = cur->next;
       }
       return result;
 
@@ -272,7 +273,6 @@ void sr_handleip(struct sr_instance* sr,
         unsigned int len,
         char* interface/* lent */)
 {
-      printf("Handleing ip...... \n");
       /* Get necessary informaiton*/
       struct sr_if *iface = sr_get_interface(sr, interface);
       sr_ethernet_hdr_t *e_header = (sr_ethernet_hdr_t*) packet;
