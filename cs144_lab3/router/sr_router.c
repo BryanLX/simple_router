@@ -154,7 +154,7 @@ void send_arp(struct sr_instance *sr, struct sr_arpreq * req){
     struct sr_if* iface = sr_get_interface(sr, req->packets->iface);
 
     /* setting eth_header*/
-    memcpy(eth_header->ether_dhost, 255, ETHER_ADDR_LEN);
+    memset(eth_header->ether_dhost, 255, ETHER_ADDR_LEN);
     memcpy(eth_header->ether_shost, iface->addr, ETHER_ADDR_LEN);
     eth_header->ether_type = htons(ethertype_arp);
 
@@ -199,11 +199,11 @@ struct sr_rt * LPM(struct sr_rt * r_table,uint32_t  ip_dst){
 void sr_handlearp(struct sr_instance* sr,uint8_t * packet,unsigned int len,char* interface)
 {
     sr_ethernet_hdr_t * ethernet_header = (sr_ethernet_hdr_t *)packet;
-    sr_arp_hdr_t* arp_header = (sr_arp_hdr_t *) (sizeof(sr_ethernet_hdr_t)+packet);
-    unsigned short op = arp_header->ar_op;
+    sr_arp_hdr_t* a_header = (sr_arp_hdr_t *) (sizeof(sr_ethernet_hdr_t)+packet);
+    unsigned short op = a_header->ar_op;
 
     struct sr_if *iface = sr_get_interface(sr, interface);
-    if (iface == 0 || iface ->ip != arp_header->ar_tip ){
+    if (iface == 0 || iface ->ip != a_header->ar_tip ){
       return;
     }
     if(arp_op_request == ntohs(op) ){
@@ -217,7 +217,7 @@ void sr_handlearp(struct sr_instance* sr,uint8_t * packet,unsigned int len,char*
       /* setting eth_header*/
       memcpy(eth_header->ether_dhost, ethernet_header->ether_shost, ETHER_ADDR_LEN);
       memcpy(eth_header->ether_shost, iface->addr, ETHER_ADDR_LEN);
-      eth_header->ether_type = ethernet_header->ether_type;
+      eth_header->ether_type = ethertype_arp;
 
       /* setting arp_header*/
       arp_header-> ar_hrd = htons(arp_hrd_ethernet);
@@ -227,10 +227,12 @@ void sr_handlearp(struct sr_instance* sr,uint8_t * packet,unsigned int len,char*
       arp_header-> ar_op = htons(arp_op_reply);
       memcpy(arp_header-> ar_sha, iface->addr, ETHER_ADDR_LEN);
       arp_header-> ar_sip = iface->ip;
-      memcpy(arp_header-> ar_tha, arp_header->ar_sha,ETHER_ADDR_LEN);
-      arp_header-> ar_tip = arp_header->ar_sip;
+      memcpy(arp_header-> ar_tha, a_header->ar_sha,ETHER_ADDR_LEN);
+      arp_header-> ar_tip = a_header->ar_sip;
 
       int size = sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t);
+      printf("Sending replay: \n");
+      print_hdr_eth(arp_reply);
       int result =  sr_send_packet(sr, arp_reply, size, interface);
       if (result != 0){
         printf("Something wrong when sending packet \n");
@@ -345,10 +347,7 @@ void sr_handlepacket(struct sr_instance* sr,
     printf("*** -> Received packet of length %d \n",len);
 
     /* fill in code here */
-    /* check frame len*/
-    if (len != sizeof(sr_ethernet_hdr_t)) {
-      printf("The len is not correct.\n");
-    }
+    print_hdr_eth(uint8_t *packet);
     /*First decide which type it is*/
     uint16_t type = ethertype(packet);
     printf("Type is : %d\n", type);
