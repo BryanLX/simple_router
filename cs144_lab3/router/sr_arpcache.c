@@ -20,6 +20,7 @@ void handle_arpreq(struct sr_instance *sr, struct sr_arpreq * req){
         if (req->times_sent >= 5){
             /*send icmp host unreachable to source addr of all pkts waiting
              on this request*/
+            printf("handel_qrpreq >5 sending ICMP unreachable \n");
             struct sr_packet * cur = req ->packets;
             while(cur){
                 send_icmp_3(sr, 3, 1 , cur->buf, cur->iface, cur->len);
@@ -29,6 +30,7 @@ void handle_arpreq(struct sr_instance *sr, struct sr_arpreq * req){
         }
         else{
             /*send arp request*/
+            printf("handel_qrpreq sending arp \n");
             send_arp(sr,req);
             req->sent = now;
             req->times_sent++;

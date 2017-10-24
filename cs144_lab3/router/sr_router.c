@@ -102,6 +102,7 @@ void send_icmp_3(struct sr_instance* sr, int type, int code , uint8_t* packet, c
 }
 
 void send_icmp(struct sr_instance* sr, int type, int code , uint8_t* packet, char* interface, unsigned int len){
+    printf("Sending ICMP \n");
     /* Get nessary informations*/
     struct sr_if *iface = sr_get_interface(sr, interface);
     sr_ethernet_hdr_t * e_header_ori = (sr_ethernet_hdr_t *) packet;
@@ -130,13 +131,13 @@ void send_icmp(struct sr_instance* sr, int type, int code , uint8_t* packet, cha
     ip_header ->ip_sum = 0;
     ip_header ->ip_src = iface->ip;
     ip_header ->ip_dst = ip_header_ori->ip_src;
-    ip_header ->ip_sum = cksum((const void*)ip_header, sizeof(sr_ip_hdr_t));
 
     /*Setting ICMP*/
     icmp_header->icmp_type = type;
     icmp_header->icmp_code = code;
     icmp_header->icmp_sum = 0;
     icmp_header->icmp_sum = cksum((const void*)icmp_header, sizeof(sr_icmp_hdr_t));
+    ip_header ->ip_sum = cksum((const void*)ip_header, sizeof(sr_ip_hdr_t));
 
     int result = sr_send_packet(sr, icmp, sizeof(sr_icmp_hdr_t) + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t), interface);
     if (result != 0){
@@ -148,7 +149,7 @@ void send_icmp(struct sr_instance* sr, int type, int code , uint8_t* packet, cha
 
 void send_arp(struct sr_instance *sr, struct sr_arpreq * req){
     uint8_t* arp = (uint8_t*) malloc(sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t));
-
+    printf("Sending arp broadcast, start processing..... \n");
     sr_arp_hdr_t *arp_header = (sr_arp_hdr_t*) (arp+ sizeof(struct sr_ethernet_hdr));
     sr_ethernet_hdr_t *eth_header = (sr_ethernet_hdr_t*) arp;
     struct sr_if* iface = sr_get_interface(sr, req->packets->iface);
@@ -166,7 +167,7 @@ void send_arp(struct sr_instance *sr, struct sr_arpreq * req){
     arp_header-> ar_op = htons(arp_op_request);
     memcpy(arp_header-> ar_sha, iface->addr, ETHER_ADDR_LEN);
     arp_header-> ar_sip = iface->ip;
-    memset(arp_header-> ar_tha, 255,ETHER_ADDR_LEN);
+    memset(arp_header-> ar_tha, 0,ETHER_ADDR_LEN);
     arp_header-> ar_tip = req->ip;
 
     int size = sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t);
@@ -217,7 +218,7 @@ void sr_handlearp(struct sr_instance* sr,uint8_t * packet,unsigned int len,char*
       /* setting eth_header*/
       memcpy(eth_header->ether_dhost, ethernet_header->ether_shost, ETHER_ADDR_LEN);
       memcpy(eth_header->ether_shost, iface->addr, ETHER_ADDR_LEN);
-      eth_header->ether_type = ethertype_arp;
+      eth_header->ether_type = htons(ethertype_arp);
 
       /* setting arp_header*/
       arp_header-> ar_hrd = htons(arp_hrd_ethernet);
