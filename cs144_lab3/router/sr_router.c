@@ -14,7 +14,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <stdlib.h>
-
+#include <string.h>
 #include "sr_if.h"
 #include "sr_rt.h"
 #include "sr_router.h"
@@ -239,7 +239,7 @@ void sr_handlearp(struct sr_instance* sr,uint8_t * packet,unsigned int len,char*
     }else if (arp_op_reply == ntohs(op) ){
       /* handle arp reply*/
         printf("Received arp reply, start processing..... \n");
-        sr_ethernet_hdr_t * ethernet_header = (sr_ethernet_hdr_t *)packet;
+
         sr_arp_hdr_t* arp_header = (sr_arp_hdr_t *) (sizeof(sr_ethernet_hdr_t)+packet);
         struct sr_arpreq *request = sr_arpcache_insert(&sr->cache,arp_header->ar_sha, arp_header->ar_sip);
         if(request){
@@ -274,7 +274,7 @@ void sr_handleip(struct sr_instance* sr,
       sr_ip_hdr_t *ip_header = (sr_ip_hdr_t *) (packet + sizeof(sr_ethernet_hdr_t));
       if (ip_header->ip_ttl < 1){
           printf("Received ip with TTL less than 1, packet been dropped \n");
-          send_icmp_3(sr, 11, 0, packet, len, interface);
+          send_icmp_3(sr, 11, 0, packet, interface, len);
 
       }
       if (ip_header->ip_dst == iface->ip){
@@ -287,7 +287,7 @@ void sr_handleip(struct sr_instance* sr,
             return;
           } else {
             printf("Sending port unreachable\n");
-            send_icmp_type3(sr, 3, 3, packet, interface, len);
+            send_icmp_3(sr, 3, 3, packet, interface, len);
             return;
           }
       }else{

@@ -25,7 +25,7 @@ void handle_arpreq(struct sr_instance *sr, struct sr_arpreq * req){
                 send_icmp_3(sr, 3, 1 , cur->buf, cur->iface, cur->len);
                 cur = cur->next;
             }
-            arpreq_destroy(&sr->cache, req);
+            sr_arpreq_destroy(&sr->cache, req);
         }
         else{
             /*send arp request*/
