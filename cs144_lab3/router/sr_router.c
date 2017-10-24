@@ -54,6 +54,7 @@ void sr_init(struct sr_instance* sr)
 
 
 void send_icmp_3(struct sr_instance* sr, int type, int code , uint8_t* packet, char* interface, unsigned int len){
+    printf("Sending ICMP 3 \n");
     /* Get nessary informations*/
     struct sr_if *iface = sr_get_interface(sr, interface);
     sr_ethernet_hdr_t * e_header_ori = (sr_ethernet_hdr_t *) packet;
@@ -271,6 +272,7 @@ void sr_handleip(struct sr_instance* sr,
         unsigned int len,
         char* interface/* lent */)
 {
+      printf("Handleing ip...... \n");
       /* Get necessary informaiton*/
       struct sr_if *iface = sr_get_interface(sr, interface);
       sr_ethernet_hdr_t *e_header = (sr_ethernet_hdr_t*) packet;
@@ -298,6 +300,7 @@ void sr_handleip(struct sr_instance* sr,
           /*check rtable, perform longest prefix match*/
           struct sr_rt* result = LPM(sr->routing_table,ip_header->ip_dst);
           if(result){
+            printf("LPM found \n");
             struct sr_arpentry * arpentry = sr_arpcache_lookup (&sr->cache, result->gw.s_addr);
             if(arpentry){
               memcpy(e_header->ether_dhost, arpentry->mac, ETHER_ADDR_LEN);
@@ -313,6 +316,7 @@ void sr_handleip(struct sr_instance* sr,
             }
 
           }else{
+            printf("LPM not found \n");
             send_icmp_3(sr, 3, 0, packet, interface, len);
           }
       }
