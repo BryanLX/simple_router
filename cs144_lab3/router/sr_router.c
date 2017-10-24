@@ -53,7 +53,129 @@ void sr_init(struct sr_instance* sr)
 
 
 
+void send_icmp_3(struct sr_instance* sr, int type, int code , uint8_t* packet, char* interface, unsigned int len){
+    /* Get nessary informations*/
+    struct sr_if *iface = sr_get_interface(sr, interface);
+    sr_ethernet_hdr_t * e_header_ori = (sr_ethernet_hdr_t *) packet;
+    sr_ip_hdr_t * ip_header_ori = (sr_ip_hdr_t *) (packet + sizeof(struct sr_ethernet_hdr));
 
+    /*Allocate a packet*/
+    uint8_t* icmp = (uint8_t*) malloc(sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t) + sizeof(sr_icmp_t3_hdr_t));
+    sr_ethernet_hdr_t *e_header = (sr_ethernet_hdr_t *) icmp;
+    sr_ip_hdr_t *ip_header = (sr_ip_hdr_t *) (icmp + sizeof(sr_ethernet_hdr_t));
+    sr_icmp_t3_hdr_t* icmp_header = (sr_icmp_t3_hdr_t*) (icmp + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
+
+    /*Setting ethernet header*/
+    memcpy(e_header->ether_shost, iface->addr, ETHER_ADDR_LEN);
+    memcpy(e_header->ether_dhost, e_header_ori->ether_shost, ETHER_ADDR_LEN);
+    e_header->ether_type = htons(ethertype_ip);
+
+    /*Setting ip header*/
+    ip_header ->ip_hl = ip_header_ori ->ip_hl;
+    ip_header ->ip_v = ip_header_ori ->ip_v;
+    ip_header ->ip_tos = ip_header_ori ->ip_tos;
+    ip_header ->ip_len = htons(sizeof(sr_icmp_t3_hdr_t) + sizeof(sr_ip_hdr_t));
+    ip_header ->ip_id = ip_header_ori->ip_id;
+    ip_header ->ip_off = ip_header_ori->ip_off;
+    ip_header ->ip_ttl = 64;
+    ip_header ->ip_p = ip_protocol_icmp;
+    ip_header ->ip_sum = 0;
+    ip_header ->ip_src = iface->ip;
+    ip_header ->ip_dst = ip_header_ori->ip_src;
+    ip_header ->ip_sum = cksum((const void*)ip_header, sizeof(sr_ip_hdr_t));
+
+    /*Setting ICMP*/
+    icmp_header->icmp_type = type;
+    icmp_header->unused = 0;
+    icmp_header->next_mtu = 0;
+    icmp_header->icmp_code = code;
+    memcpy(icmp_header->data, ip_header_ori, ICMP_DATA_SIZE);
+    icmp_header->icmp_sum = 0;
+    icmp_header->icmp_sum = cksum((const void*)icmp_header, sizeof(sr_icmp_t3_hdr_t));
+
+    int result = sr_send_packet(sr, icmp, sizeof(sr_icmp_t3_hdr_t) + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t), interface);
+    if (result != 0){
+      printf("Something wrong when sending packet \n");
+    }
+    free(icmp);
+
+}
+
+void send_icmp(struct sr_instance* sr, int type, int code , uint8_t* packet, char* interface, unsigned int len){
+    /* Get nessary informations*/
+    struct sr_if *iface = sr_get_interface(sr, interface);
+    sr_ethernet_hdr_t * e_header_ori = (sr_ethernet_hdr_t *) packet;
+    sr_ip_hdr_t * ip_header_ori = (sr_ip_hdr_t *) (packet + sizeof(struct sr_ethernet_hdr));
+
+    /*Allocate a packet*/
+    uint8_t* icmp = (uint8_t*) malloc(sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t) + sizeof(sr_icmp_hdr_t));
+    sr_ethernet_hdr_t *e_header = (sr_ethernet_hdr_t *) icmp;
+    sr_ip_hdr_t *ip_header = (sr_ip_hdr_t *) (icmp + sizeof(sr_ethernet_hdr_t));
+    sr_icmp_hdr_t* icmp_header = (sr_icmp_hdr_t*) (icmp + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
+
+    /*Setting ethernet header*/
+    memcpy(e_header->ether_shost, iface->addr, ETHER_ADDR_LEN);
+    memcpy(e_header->ether_dhost, e_header_ori->ether_shost, ETHER_ADDR_LEN);
+    e_header->ether_type = htons(ethertype_ip);
+
+    /*Setting ip header*/
+    ip_header ->ip_hl = ip_header_ori ->ip_hl;
+    ip_header ->ip_v = ip_header_ori ->ip_v;
+    ip_header ->ip_tos = ip_header_ori ->ip_tos;
+    ip_header ->ip_len = htons(sizeof(sr_icmp_hdr_t) + sizeof(sr_ip_hdr_t));
+    ip_header ->ip_id = ip_header_ori->ip_id;
+    ip_header ->ip_off = ip_header_ori->ip_off;
+    ip_header ->ip_ttl = 64;
+    ip_header ->ip_p = ip_protocol_icmp;
+    ip_header ->ip_sum = 0;
+    ip_header ->ip_src = iface->ip;
+    ip_header ->ip_dst = ip_header_ori->ip_src;
+    ip_header ->ip_sum = cksum((const void*)ip_header, sizeof(sr_ip_hdr_t));
+
+    /*Setting ICMP*/
+    icmp_header->icmp_type = type;
+    icmp_header->icmp_code = code;
+    icmp_header->icmp_sum = 0;
+    icmp_header->icmp_sum = cksum((const void*)icmp_header, sizeof(sr_icmp_hdr_t));
+
+    int result = sr_send_packet(sr, icmp, sizeof(sr_icmp_hdr_t) + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t), interface);
+    if (result != 0){
+      printf("Something wrong when sending packet \n");
+    }
+    free(icmp);
+
+}
+
+void send_arp(struct sr_instance *sr, struct sr_arpreq * req){
+    uint8_t* arp = (uint8_t*) malloc(sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t));
+
+    sr_arp_hdr_t *arp_header = (sr_arp_hdr_t*) (arp+ sizeof(struct sr_ethernet_hdr));
+    sr_ethernet_hdr_t *eth_header = (sr_ethernet_hdr_t*) arp;
+    struct sr_if* iface = sr_get_interface(sr, req->packets->iface);
+
+    /* setting eth_header*/
+    memcpy(eth_header->ether_dhost, 255, ETHER_ADDR_LEN);
+    memcpy(eth_header->ether_shost, iface->addr, ETHER_ADDR_LEN);
+    eth_header->ether_type = htons(ethertype_arp);
+
+    /* setting arp_header*/
+    arp_header-> ar_hrd = htons(arp_hrd_ethernet);
+    arp_header-> ar_pro = htons(ethertype_ip);
+    arp_header-> ar_hln = ETHER_ADDR_LEN;
+    arp_header-> ar_pln = 4;
+    arp_header-> ar_op = htons(arp_op_request);
+    memcpy(arp_header-> ar_sha, iface->addr, ETHER_ADDR_LEN);
+    arp_header-> ar_sip = iface->ip;
+    memset(arp_header-> ar_tha, 255,ETHER_ADDR_LEN);
+    arp_header-> ar_tip = req->ip;
+
+    int size = sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t);
+    int result =  sr_send_packet(sr, arp, size,iface->name );
+    if (result != 0){
+      printf("Something wrong when sending packet \n");
+    }
+    free(arp);
+}
 
 
 struct sr_rt * LPM(struct sr_rt * r_table,uint32_t  ip_dst){
