@@ -347,7 +347,7 @@ void sr_handlepacket(struct sr_instance* sr,
     printf("*** -> Received packet of length %d \n",len);
 
     /* fill in code here */
-    print_hdr_eth(uint8_t *packet);
+    print_hdr_eth(packet);
     /*First decide which type it is*/
     uint16_t type = ethertype(packet);
     printf("Type is : %d\n", type);
