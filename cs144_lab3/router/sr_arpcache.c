@@ -31,6 +31,7 @@ void handle_arpreq(struct sr_instance *sr, struct sr_arpreq * req){
             /*send arp request*/
             printf("handel_qrpreq sending arp \n");
             struct sr_if* cur = sr->if_list;
+
             while(cur){
               send_arp(sr,req,cur);
               cur = cur->next;
