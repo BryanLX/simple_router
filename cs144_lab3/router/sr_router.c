@@ -186,7 +186,7 @@ void send_icmp(struct sr_instance* sr, int type, int code , uint8_t* packet, cha
       return;
     }
     struct sr_if *out = sr_get_interface(sr, match->interface);
-
+    printf("iam here1 \n");
     /*Allocate a packet*/
     uint8_t* icmp = (uint8_t*) malloc(sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t) + sizeof(sr_icmp_hdr_t));
     sr_ethernet_hdr_t *e_header = (sr_ethernet_hdr_t *) icmp;
@@ -217,7 +217,7 @@ void send_icmp(struct sr_instance* sr, int type, int code , uint8_t* packet, cha
     icmp_header->icmp_sum = 0;
     icmp_header->icmp_sum = cksum((const void*)icmp_header, sizeof(sr_icmp_hdr_t));
     ip_header ->ip_sum = cksum((const void*)ip_header, sizeof(sr_ip_hdr_t));
-
+    printf("iam here 2 \n");
     struct sr_arpentry * result = sr_arpcache_lookup(&sr->cache,match->gw.s_addr);
     if (result){
       memcpy(e_header->ether_dhost, result->mac, ETHER_ADDR_LEN);
