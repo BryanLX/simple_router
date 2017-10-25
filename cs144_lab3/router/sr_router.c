@@ -311,14 +311,17 @@ void sr_handleip(struct sr_instance* sr,
           return;
         }
       }
+      printf("ip_dis:%u \n  ifaceip: %u\n",ip_header->ip_dst,iface->ip);
       if (ip_header->ip_dst == iface->ip){
           printf("Received ip for me, start processing..... \n");
-          sr_icmp_hdr_t* icmp_header = (sr_icmp_hdr_t* )(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
-          if (ip_header->ip_p == ip_protocol_icmp && icmp_header->icmp_type == 8){
-            printf("Received icmp echo , start processing..... \n");
-            send_icmp(sr, 0, 0, packet, interface, len);
+          if (ip_header->ip_p == ip_protocol_icmp){
+            sr_icmp_hdr_t* icmp_header = (sr_icmp_hdr_t* )(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
+            if(icmp_header->icmp_type == 8){
+              printf("Received icmp echo , start processing..... \n");
+              send_icmp(sr, 0, 0, packet, interface, len);
 
-            return;
+              return;
+            }
           } else {
             printf("Sending port unreachable\n");
             send_icmp_3(sr, 3, 3, packet, interface, len);
@@ -343,7 +346,8 @@ void sr_handleip(struct sr_instance* sr,
               }
 
             }else{
-              struct sr_arpreq * req = sr_arpcache_queuereq(&sr->cache,ip_header->ip_dst, packet, len,sr_get_interface(sr,result->interface)->name);
+
+              struct sr_arpreq * req = sr_arpcache_queuereq(&sr->cache,ip_header->ip_dst, packet,len,sr_get_interface(sr,result->interface)->name);
               handle_arpreq(sr, req);
             }
 
