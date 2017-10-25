@@ -183,7 +183,8 @@ void send_arp(struct sr_instance *sr, struct sr_arpreq * req,struct sr_if* if_li
     arp_header-> ar_sip = if_list->ip;
     memset(arp_header-> ar_tha, 0,ETHER_ADDR_LEN);
     arp_header-> ar_tip = req->ip;
-
+    print_hdrs(arp,sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t));
+    printf("Arp bordcast finished..... \n");
     int size = sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t);
     int result =  sr_send_packet(sr, arp, size,if_list->name );
     if (result != 0){
@@ -224,8 +225,20 @@ void sr_handlearp(struct sr_instance* sr,uint8_t * packet,unsigned int len,char*
     sr_arp_hdr_t* a_header = (sr_arp_hdr_t *) (sizeof(sr_ethernet_hdr_t)+packet);
     unsigned short op = a_header->ar_op;
 
+    int me = 0;
+    struct sr_if * temp = sr->if_list;
+    struct sr_if * the_one = NULL;
+    while (temp != NULL) {
+        if (temp->ip == a_header->ar_tip){
+          me = 1;
+          the_one = temp;
+          break;
+        }
+        temp = temp->next;
+    }
+
     struct sr_if *iface = sr_get_interface(sr, interface);
-    if (iface == 0 || iface ->ip != a_header->ar_tip ){
+    if (me == 0 ){
       return;
     }
     if(arp_op_request == ntohs(op) ){
@@ -247,8 +260,8 @@ void sr_handlearp(struct sr_instance* sr,uint8_t * packet,unsigned int len,char*
       arp_header-> ar_hln = ETHER_ADDR_LEN;
       arp_header-> ar_pln = 4;
       arp_header-> ar_op = htons(arp_op_reply);
-      memcpy(arp_header-> ar_sha, iface->addr, ETHER_ADDR_LEN);
-      arp_header-> ar_sip = iface->ip;
+      memcpy(arp_header-> ar_sha, the_one->addr, ETHER_ADDR_LEN);
+      arp_header-> ar_sip = the_one->ip;
       memcpy(arp_header-> ar_tha, a_header->ar_sha,ETHER_ADDR_LEN);
       arp_header-> ar_tip = a_header->ar_sip;
 
