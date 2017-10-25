@@ -57,7 +57,7 @@ void send_icmp_3(struct sr_instance* sr, int type, int code , uint8_t* packet, c
     printf("Sending ICMP 3 \n");
     /* Get nessary informations*/
     struct sr_if *iface = sr_get_interface(sr, interface);
-    printf("ssssssssss :%u \n",iface->ip);
+    printf("ssssssssss : \n");
     sr_ethernet_hdr_t * e_header_ori = (sr_ethernet_hdr_t *) packet;
     sr_ip_hdr_t * ip_header_ori = (sr_ip_hdr_t *) (packet + sizeof(sr_ethernet_hdr_t));
 
@@ -114,7 +114,7 @@ void send_icmp(struct sr_instance* sr, int type, int code , uint8_t* packet, cha
     printf("Sending ICMP \n");
     /* Get nessary informations*/
     struct sr_if *iface = sr_get_interface(sr, interface);
-    printf("ssssssssss :%u \n",iface->ip);
+    printf("ssssssssss : \n");
     sr_ethernet_hdr_t * e_header_ori = (sr_ethernet_hdr_t *) packet;
     sr_ip_hdr_t * ip_header_ori = (sr_ip_hdr_t *) (packet + sizeof(struct sr_ethernet_hdr));
 
