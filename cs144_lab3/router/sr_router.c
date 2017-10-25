@@ -284,7 +284,8 @@ void sr_handlearp(struct sr_instance* sr,uint8_t * packet,unsigned int len,char*
     }else if (arp_op_reply == ntohs(op) ){
       /* handle arp reply*/
         printf("Received arp reply, start processing..... \n");
-        printf("kkkkkkkkkkk%u",sr->cache.requests->ip);
+        printf("kkkkkkkkkkk%u\n",sr->cache.requests->ip);
+        printf("kkkkkkkkkkk%u\n",sr->cache.a_header->ar_sip);
         sr_arp_hdr_t* arp_header = (sr_arp_hdr_t *) (sizeof(sr_ethernet_hdr_t)+packet);
         struct sr_arpreq *request = sr_arpcache_insert(&sr->cache,arp_header->ar_sha, arp_header->ar_sip);
         if(request){
