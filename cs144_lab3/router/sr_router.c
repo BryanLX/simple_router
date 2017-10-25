@@ -286,14 +286,13 @@ void sr_handlearp(struct sr_instance* sr,uint8_t * packet,unsigned int len,char*
         printf("Received arp reply, start processing..... \n");
         printf("kkkkkkkkkkk%u\n",sr->cache.requests->ip);
         printf("kkkkkkkkkkk%u\n",a_header->ar_sip);
-        sr_arp_hdr_t* arp_header = (sr_arp_hdr_t *) (sizeof(sr_ethernet_hdr_t)+packet);
-        struct sr_arpreq *request = sr_arpcache_insert(&sr->cache,arp_header->ar_sha, arp_header->ar_sip);
-        if(request){
+        struct sr_arpreq *request = sr_arpcache_insert(&sr->cache,a_header->ar_sha, arp_header->ar_sip);
+        /*if(request){
           struct sr_packet *p_node = request->packets;
-          /* forwarding all packet are waiting */
+           forwarding all packet are waiting
           while(p_node){
             sr_ethernet_hdr_t * e_header = (sr_ethernet_hdr_t *)p_node->buf;
-  					memcpy(e_header->ether_dhost, arp_header->ar_sha, ETHER_ADDR_LEN);
+  					memcpy(e_header->ether_dhost, a_header->ar_sha, ETHER_ADDR_LEN);
   					memcpy(e_header->ether_shost, sr_get_interface(sr, p_node->iface)->addr, ETHER_ADDR_LEN);
   					int result = sr_send_packet(sr, p_node->buf, p_node->len, p_node->iface);
   					if (result !=0){
@@ -302,7 +301,8 @@ void sr_handlearp(struct sr_instance* sr,uint8_t * packet,unsigned int len,char*
   					p_node = p_node->next;
           }
           sr_arpreq_destroy(&sr->cache, request);
-        }
+        }*/
+        handle_arpreq(sr, request);
     }else{
         printf("Unkown arp opcode \n");
     }
