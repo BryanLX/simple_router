@@ -212,6 +212,11 @@ struct sr_rt * LPM(struct sr_rt * r_table,uint32_t  ip_dst){
         }
         cur = cur->next;
       }
+      if(result){
+          printf("result is not null: \n",);
+      }else{
+          printf("result is null \n");
+      }
       return result;
 
       /*
