@@ -161,6 +161,8 @@ void send_icmp_3(struct sr_instance* sr, int type, int code , uint8_t* packet, c
   if (result){
     memcpy(e_header->ether_dhost, result->mac, ETHER_ADDR_LEN);
     memcpy(e_header->ether_shost, out->addr, ETHER_ADDR_LEN);
+    printf("Sending icmp3 \n");
+    print_hdrs(icmp, sizeof(sr_icmp_t3_hdr_t) + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
     int re = sr_send_packet(sr, icmp, sizeof(sr_icmp_t3_hdr_t) + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t), out->name);
     if (re != 0){
       printf("Something wrong when sending packet \n");
@@ -222,6 +224,8 @@ void send_icmp(struct sr_instance* sr, int type, int code , uint8_t* packet, cha
     if (result){
       memcpy(e_header->ether_dhost, result->mac, ETHER_ADDR_LEN);
       memcpy(e_header->ether_shost, out->addr, ETHER_ADDR_LEN);
+      printf("Sending icmp \n");
+      print_hdrs(icmp, sizeof(sr_icmp_t3_hdr_t) + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
       int re = sr_send_packet(sr, icmp, sizeof(sr_icmp_hdr_t) + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t), out->name);
       if (re != 0){
         printf("Something wrong when sending packet \n");
