@@ -303,7 +303,7 @@ void sr_handleip(struct sr_instance* sr,
       sr_ip_hdr_t *ip_header = (sr_ip_hdr_t *) (packet + sizeof(sr_ethernet_hdr_t));
       if (ip_header->ip_ttl <= 1 ){
           if(ip_header->ip_ttl == 1 &&  ip_header->ip_dst == iface->ip){
-
+            return;
           }else{
           printf("Received ip with TTL less or equal to to  1, packet been dropped \n");
 
@@ -311,7 +311,8 @@ void sr_handleip(struct sr_instance* sr,
           return;
         }
       }
-      printf("ip_dis:%u \n  ifaceip: %u\n",ip_header->ip_dst,iface->ip);
+
+      printf("ip_dis:%d \n  ,ifaceip: %d \n",ip_header->ip_dst,iface->ip);
       if (ip_header->ip_dst == iface->ip){
           printf("Received ip for me, start processing..... \n");
           if (ip_header->ip_p == ip_protocol_icmp){
