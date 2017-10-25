@@ -167,11 +167,10 @@ void send_arp(struct sr_instance *sr, struct sr_arpreq * req,struct sr_if* if_li
     printf("Sending arp broadcast, start processing..... \n");
     sr_arp_hdr_t *arp_header = (sr_arp_hdr_t*) (arp+ sizeof(struct sr_ethernet_hdr));
     sr_ethernet_hdr_t *eth_header = (sr_ethernet_hdr_t*) arp;
-    struct sr_if* iface = sr_get_interface(sr, req->packets->iface);
 
     /* setting eth_header*/
     memset(eth_header->ether_dhost, 255, ETHER_ADDR_LEN);
-    memcpy(eth_header->ether_shost, iface->addr, ETHER_ADDR_LEN);
+    memcpy(eth_header->ether_shost, if_list->addr, ETHER_ADDR_LEN);
     eth_header->ether_type = htons(ethertype_arp);
 
     /* setting arp_header*/
