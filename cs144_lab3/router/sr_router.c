@@ -267,10 +267,10 @@ void sr_handlearp(struct sr_instance* sr,uint8_t * packet,unsigned int len,char*
 
       int size = sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t);
       printf("Sending reply: \n");
-      print_hdr_eth(arp_reply);
-      printf("I am here \n");
+      print_hdrs(arp_reply,sizeof(sr_arp_hdr_t) + sizeof(sr_ethernet_hdr_t));
       struct sr_arpentry * result = sr_arpcache_lookup(&sr->cache,a_header->ar_sip );
       if (result){
+        printf("Resullt fihnd \n");
         memcpy(eth_header->ether_dhost, result->mac, ETHER_ADDR_LEN);
         int result =  sr_send_packet(sr, arp_reply, size, interface);
         if (result != 0){
