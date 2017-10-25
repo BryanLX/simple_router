@@ -57,7 +57,6 @@ void send_icmp_3(struct sr_instance* sr, int type, int code , uint8_t* packet, c
     printf("Sending ICMP 3 \n");
     /* Get nessary informations*/
     struct sr_if *iface = sr_get_interface(sr, interface);
-    printf("ssssssssss : \n");
     sr_ethernet_hdr_t * e_header_ori = (sr_ethernet_hdr_t *) packet;
     sr_ip_hdr_t * ip_header_ori = (sr_ip_hdr_t *) (packet + sizeof(sr_ethernet_hdr_t));
 
@@ -114,7 +113,6 @@ void send_icmp(struct sr_instance* sr, int type, int code , uint8_t* packet, cha
     printf("Sending ICMP \n");
     /* Get nessary informations*/
     struct sr_if *iface = sr_get_interface(sr, interface);
-    printf("ssssssssss : \n");
     sr_ethernet_hdr_t * e_header_ori = (sr_ethernet_hdr_t *) packet;
     sr_ip_hdr_t * ip_header_ori = (sr_ip_hdr_t *) (packet + sizeof(struct sr_ethernet_hdr));
 
@@ -164,7 +162,7 @@ void send_icmp(struct sr_instance* sr, int type, int code , uint8_t* packet, cha
 
 }
 
-void send_arp(struct sr_instance *sr, struct sr_arpreq * req){
+void send_arp(struct sr_instance *sr, struct sr_arpreq * req,struct sr_if* if_list){
     uint8_t* arp = (uint8_t*) malloc(sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t));
     printf("Sending arp broadcast, start processing..... \n");
     sr_arp_hdr_t *arp_header = (sr_arp_hdr_t*) (arp+ sizeof(struct sr_ethernet_hdr));
@@ -182,13 +180,13 @@ void send_arp(struct sr_instance *sr, struct sr_arpreq * req){
     arp_header-> ar_hln = ETHER_ADDR_LEN;
     arp_header-> ar_pln = 4;
     arp_header-> ar_op = htons(arp_op_request);
-    memcpy(arp_header-> ar_sha, iface->addr, ETHER_ADDR_LEN);
-    arp_header-> ar_sip = iface->ip;
+    memcpy(arp_header-> ar_sha, if_list->addr, ETHER_ADDR_LEN);
+    arp_header-> ar_sip = if_list->ip;
     memset(arp_header-> ar_tha, 0,ETHER_ADDR_LEN);
     arp_header-> ar_tip = req->ip;
 
     int size = sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t);
-    int result =  sr_send_packet(sr, arp, size,iface->name );
+    int result =  sr_send_packet(sr, arp, size,if_list->name );
     if (result != 0){
       printf("Something wrong when sending packet \n");
     }
@@ -214,11 +212,7 @@ struct sr_rt * LPM(struct sr_rt * r_table,uint32_t  ip_dst){
         }
         cur = cur->next;
       }
-      if(result){
-          printf("result is not null: \n");
-      }else{
-          printf("result is null \n");
-      }
+
       return result;
 
 }
@@ -343,13 +337,13 @@ void sr_handleip(struct sr_instance* sr,
             sr_icmp_hdr_t* icmp_header = (sr_icmp_hdr_t* )(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
             if(icmp_header->icmp_type == 8){
               printf("Received icmp echo , start processing..... \n");
-              send_icmp(sr, 0, 0, packet, the_one->name, len);
+              send_icmp(sr, 0, 0, packet, interface, len);
 
               return;
             }
           } else {
             printf("Sending port unreachable\n");
-            send_icmp_3(sr, 3, 3, packet, the_one->name,len);
+            send_icmp_3(sr, 3, 3, packet, interface,len);
             return;
           }
       }else{

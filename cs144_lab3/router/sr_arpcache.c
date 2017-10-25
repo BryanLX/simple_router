@@ -27,11 +27,14 @@ void handle_arpreq(struct sr_instance *sr, struct sr_arpreq * req){
                 cur = cur->next;
             }
             sr_arpreq_destroy(&sr->cache, req);
-        }
-        else{
+        }else{
             /*send arp request*/
             printf("handel_qrpreq sending arp \n");
-            send_arp(sr,req);
+            struct sr_if* cur = sr->if_list;
+            while(cur){
+              send_arp(sr,req,cur);
+              cur = cur->next;
+            }
             req->sent = now;
             req->times_sent++;
 
