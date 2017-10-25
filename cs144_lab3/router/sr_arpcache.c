@@ -17,7 +17,7 @@ void handle_arpreq(struct sr_instance *sr, struct sr_arpreq * req){
     time_t now;
     time(&now);
     if (difftime(now, req->sent) > 1.0){
-        if (req->times_sent >= 5){
+        if (req->times_sent > 5){
             /*send icmp host unreachable to source addr of all pkts waiting
              on this request*/
             printf("handel_qrpreq >5 sending ICMP unreachable \n");
