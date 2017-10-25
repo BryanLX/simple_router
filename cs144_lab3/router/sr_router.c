@@ -286,7 +286,7 @@ void sr_handlearp(struct sr_instance* sr,uint8_t * packet,unsigned int len,char*
         printf("Received arp reply, start processing..... \n");
         printf("kkkkkkkkkkk%u\n",sr->cache.requests->ip);
         printf("kkkkkkkkkkk%u\n",a_header->ar_sip);
-        struct sr_arpreq *request = sr_arpcache_insert(&sr->cache,a_header->ar_sha, arp_header->ar_sip);
+        struct sr_arpreq *request = sr_arpcache_insert(&sr->cache,a_header->ar_sha, a_header->ar_sip);
         /*if(request){
           struct sr_packet *p_node = request->packets;
            forwarding all packet are waiting
