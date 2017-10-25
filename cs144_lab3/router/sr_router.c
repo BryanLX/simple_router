@@ -213,32 +213,11 @@ struct sr_rt * LPM(struct sr_rt * r_table,uint32_t  ip_dst){
         cur = cur->next;
       }
       if(result){
-          printf("result is not null: \n",);
+          printf("result is not null: \n");
       }else{
           printf("result is null \n");
       }
       return result;
-
-      /*
-      struct sr_rt * cur_entry = r_table;
-    	struct sr_rt * found_entry = NULL;
-
-    	int longest_len = 0;
-    	int len = 0;
-    	while (cur_entry != NULL) {
-    		uint32_t dst_masked = dst & cur_entry->mask.s_addr;
-    		uint32_t entry_masked = cur_entry->dest.s_addr & cur_entry->mask.s_addr;
-    		if (dst_masked == entry_masked) {
-    			len = dst & cur_entry->mask.s_addr;
-    			if (len > longest_len) {
-    				longest_len = len;
-    				found_entry = cur_entry;
-    			}
-    		}
-    		cur_entry = cur_entry->next;
-    	}
-
-    	return found_entry;*/
 
 }
 
@@ -362,13 +341,13 @@ void sr_handleip(struct sr_instance* sr,
             sr_icmp_hdr_t* icmp_header = (sr_icmp_hdr_t* )(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
             if(icmp_header->icmp_type == 8){
               printf("Received icmp echo , start processing..... \n");
-              send_icmp(sr, 0, 0, packet, the_one->name, len);
+              send_icmp(sr, 0, 0, packet, interface, len);
 
               return;
             }
           } else {
             printf("Sending port unreachable\n");
-            send_icmp_3(sr, 3, 3, packet, the_one->name,len);
+            send_icmp_3(sr, 3, 3, packet, interface,len);
             return;
           }
       }else{
@@ -437,7 +416,7 @@ void sr_handlepacket(struct sr_instance* sr,
     printf("*** -> Received packet of length %d \n",len);
 
     /* fill in code here */
-    print_hdr_eth(packet);
+    print_hdrs(packet,len);
     /*First decide which type it is*/
     uint16_t type = ethertype(packet);
     printf("Type is : %d\n", type);
