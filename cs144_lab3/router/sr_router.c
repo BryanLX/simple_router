@@ -97,7 +97,7 @@ void send_icmp_3(struct sr_instance* sr, int type, int code , uint8_t* packet, c
 
     struct sr_arpentry * result = sr_arpcache_lookup(&sr->cache,ip_header ->ip_dst );
     if (result){
-      memcpy(e_header->ether_shost, result->mac, ETHER_ADDR_LEN);
+      memcpy(e_header->ether_dhost, result->mac, ETHER_ADDR_LEN);
       int re = sr_send_packet(sr, icmp, sizeof(sr_icmp_t3_hdr_t) + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t), interface);
       if (re != 0){
         printf("Something wrong when sending packet \n");
@@ -149,7 +149,7 @@ void send_icmp(struct sr_instance* sr, int type, int code , uint8_t* packet, cha
 
     struct sr_arpentry * result = sr_arpcache_lookup(&sr->cache,ip_header ->ip_dst );
     if (result){
-      memcpy(e_header->ether_shost, result->mac, ETHER_ADDR_LEN);
+      memcpy(e_header->ether_dhost, result->mac, ETHER_ADDR_LEN);
       int re = sr_send_packet(sr, icmp, sizeof(sr_icmp_hdr_t) + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t), interface);
       if (re != 0){
         printf("Something wrong when sending packet \n");
@@ -285,14 +285,14 @@ void sr_handlearp(struct sr_instance* sr,uint8_t * packet,unsigned int len,char*
       /* handle arp reply*/
         printf("Received arp reply, start processing..... \n");
 
-        struct sr_arpreq *request = sr_arpcache_insert(&sr->cache,sr_get_interface(sr, interface)->addr, a_header->ar_sip);
+        struct sr_arpreq *request = sr_arpcache_insert(&sr->cache,a_header->ar_sha, a_header->ar_sip);
         struct sr_arpentry * result = sr_arpcache_lookup(&sr->cache,a_header->ar_sip );
         if(result){
           struct sr_packet *p_node = request->packets;
           while(p_node){
             sr_ethernet_hdr_t * e_header = (sr_ethernet_hdr_t *)p_node->buf;
-  					memcpy(e_header->ether_dhost, sr_get_interface(sr, interface)->addr, ETHER_ADDR_LEN);
-  					memcpy(e_header->ether_shost, ethernet_header->ether_dhost, ETHER_ADDR_LEN);
+  					memcpy(e_header->ether_shost, sr_get_interface(sr, interface)->addr, ETHER_ADDR_LEN);
+  					memcpy(e_header->ether_dhost, result->mac, ETHER_ADDR_LEN);
   					int re = sr_send_packet(sr, p_node->buf, p_node->len, interface);
   					if (re !=0){
                 printf("Waiting packet sending failed \n");
@@ -372,7 +372,7 @@ void sr_handleip(struct sr_instance* sr,
               memcpy(e_header->ether_shost, arpentry->mac, ETHER_ADDR_LEN);
               memcpy(e_header->ether_dhost, out->addr, ETHER_ADDR_LEN);
               printf("g \n");
-              print_hdrs(packet,sizeof(sr_ethernet_hdr_t)+sizeof(sr_ip_hdr_t));
+
               int re = sr_send_packet(sr, (uint8_t*) packet, len, out->name);
               if (re!=0) {
                 printf("Forwarded IP Failed\n");
