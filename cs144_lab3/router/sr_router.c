@@ -195,21 +195,45 @@ void send_arp(struct sr_instance *sr, struct sr_arpreq * req){
 
 
 struct sr_rt * LPM(struct sr_rt * r_table,uint32_t  ip_dst){
+
+
       struct sr_rt * result  = NULL;
       struct sr_rt * cur = r_table;
-      uint32_t max= 0;
+      uint32_t max =0;
       while(cur){
-          uint32_t network_id = ip_dst & cur->mask.s_addr;
-          uint32_t cur_id = cur->dest.s_addr & cur->mask.s_addr;
-          if(network_id == cur_id){
-              if(cur->mask.s_addr > max){
-                  result = cur;
-                  max = cur->mask.s_addr;
-              }
-          }
-          cur = cur->next;
+        uint32_t network_id = ntohl(ip_dst) & ntohl(cur->mask.s_addr);
+        uint32_t cur_id = ntohl(cur->dest.s_addr) & ntohl(cur->mask.s_addr);
+        if(network_id == cur_id){
+            if(ntohl(cur->mask.s_addr) > max){
+                printf("%u>%u \n",ntohl(cur->mask.s_addr),max);
+                result = cur;
+                max = ntohl(cur->mask.s_addr);
+            }
+        }
+        cur = cur->next;
       }
       return result;
+
+      /*
+      struct sr_rt * cur_entry = r_table;
+    	struct sr_rt * found_entry = NULL;
+
+    	int longest_len = 0;
+    	int len = 0;
+    	while (cur_entry != NULL) {
+    		uint32_t dst_masked = dst & cur_entry->mask.s_addr;
+    		uint32_t entry_masked = cur_entry->dest.s_addr & cur_entry->mask.s_addr;
+    		if (dst_masked == entry_masked) {
+    			len = dst & cur_entry->mask.s_addr;
+    			if (len > longest_len) {
+    				longest_len = len;
+    				found_entry = cur_entry;
+    			}
+    		}
+    		cur_entry = cur_entry->next;
+    	}
+
+    	return found_entry;*/
 
 }
 
@@ -305,9 +329,11 @@ void sr_handleip(struct sr_instance* sr,
       /* Check if it is send to me*/
       int me = 0;
       struct sr_if * temp = sr->if_list;
+      struct sr_if * the_one = NULL;
 	    while (temp != NULL) {
 		      if (temp->ip == ip_header->ip_dst){
             me = 1;
+            the_one = temp;
 			      break;
           }
 		      temp = temp->next;
@@ -331,13 +357,13 @@ void sr_handleip(struct sr_instance* sr,
             sr_icmp_hdr_t* icmp_header = (sr_icmp_hdr_t* )(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
             if(icmp_header->icmp_type == 8){
               printf("Received icmp echo , start processing..... \n");
-              send_icmp(sr, 0, 0, packet, interface, len);
+              send_icmp(sr, 0, 0, packet, the_one->name, len);
 
               return;
             }
           } else {
             printf("Sending port unreachable\n");
-            send_icmp_3(sr, 3, 3, packet, interface, len);
+            send_icmp_3(sr, 3, 3, packet, the_one->name,len);
             return;
           }
       }else{
@@ -346,21 +372,22 @@ void sr_handleip(struct sr_instance* sr,
           struct sr_rt* result = LPM(sr->routing_table,ip_header->ip_dst);
           if(result){
             printf("LPM found \n");
+            struct sr_if *out = sr_get_interface(sr, result->interface);
             ip_header->ip_ttl--;
             ip_header->ip_sum = 0;
             ip_header->ip_sum = cksum(ip_header, sizeof(struct sr_ip_hdr));
             struct sr_arpentry * arpentry = sr_arpcache_lookup (&sr->cache, result->gw.s_addr);
             if(arpentry){
               memcpy(e_header->ether_dhost, arpentry->mac, ETHER_ADDR_LEN);
-              memcpy(e_header->ether_shost, sr_get_interface(sr,result->interface)->addr, ETHER_ADDR_LEN);
-              int re = sr_send_packet(sr, (uint8_t*) packet, len, sr_get_interface(sr,result->interface)->name);
+              memcpy(e_header->ether_shost, out->addr, ETHER_ADDR_LEN);
+              int re = sr_send_packet(sr, (uint8_t*) packet, len, out->name);
               if (re!=0) {
                 printf("Forwarded IP Failed\n");
               }
 
             }else{
 
-              struct sr_arpreq * req = sr_arpcache_queuereq(&sr->cache,ip_header->ip_dst, packet,len,sr_get_interface(sr,result->interface)->name);
+              struct sr_arpreq * req = sr_arpcache_queuereq(&sr->cache,ip_header->ip_dst, packet,len,out->name);
               handle_arpreq(sr, req);
             }
 
