@@ -266,7 +266,7 @@ void sr_handlearp(struct sr_instance* sr,uint8_t * packet,unsigned int len,char*
       arp_header-> ar_tip = a_header->ar_sip;
 
       int size = sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t);
-      printf("Sending replay: \n");
+      printf("Sending reply: \n");
       print_hdr_eth(arp_reply);
 
       struct sr_arpentry * result = sr_arpcache_lookup(&sr->cache,a_header->ar_sip );
@@ -284,7 +284,7 @@ void sr_handlearp(struct sr_instance* sr,uint8_t * packet,unsigned int len,char*
     }else if (arp_op_reply == ntohs(op) ){
       /* handle arp reply*/
         printf("Received arp reply, start processing..... \n");
-
+        printf("kkkkkkkkkkk%u",sr->cache.requests->ip);
         sr_arp_hdr_t* arp_header = (sr_arp_hdr_t *) (sizeof(sr_ethernet_hdr_t)+packet);
         struct sr_arpreq *request = sr_arpcache_insert(&sr->cache,arp_header->ar_sha, arp_header->ar_sip);
         if(request){
