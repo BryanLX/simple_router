@@ -238,15 +238,16 @@ void send_icmp(struct sr_instance* sr, int type, int code , uint8_t* packet, cha
 
 }
 
-void send_arp(struct sr_instance *sr, struct sr_arpreq * req,struct sr_if* if_list){
+void send_arp(struct sr_instance *sr, struct sr_arpreq * req){
     uint8_t* arp = (uint8_t*) malloc(sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t));
     printf("Sending arp broadcast, start processing..... \n");
     sr_arp_hdr_t *arp_header = (sr_arp_hdr_t*) (arp+ sizeof(struct sr_ethernet_hdr));
     sr_ethernet_hdr_t *eth_header = (sr_ethernet_hdr_t*) arp;
+    struct sr_if* iface = sr_get_interface(sr, req->packets->iface);
 
     /* setting eth_header*/
     memset(eth_header->ether_dhost, 255, ETHER_ADDR_LEN);
-    memcpy(eth_header->ether_shost, if_list->addr, ETHER_ADDR_LEN);
+    memcpy(eth_header->ether_shost, iface->addr, ETHER_ADDR_LEN);
     eth_header->ether_type = htons(ethertype_arp);
 
     /* setting arp_header*/
@@ -255,14 +256,13 @@ void send_arp(struct sr_instance *sr, struct sr_arpreq * req,struct sr_if* if_li
     arp_header-> ar_hln = ETHER_ADDR_LEN;
     arp_header-> ar_pln = 4;
     arp_header-> ar_op = htons(arp_op_request);
-    memcpy(arp_header-> ar_sha, if_list->addr, ETHER_ADDR_LEN);
-    arp_header-> ar_sip = if_list->ip;
+    memcpy(arp_header-> ar_sha, iface->addr, ETHER_ADDR_LEN);
+    arp_header-> ar_sip = iface->ip;
     memset(arp_header-> ar_tha, 0,ETHER_ADDR_LEN);
     arp_header-> ar_tip = req->ip;
-    print_hdrs(arp,sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t));
-    printf("Arp bordcast finished..... \n");
+
     int size = sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t);
-    int result =  sr_send_packet(sr, arp, size,if_list->name );
+    int result =  sr_send_packet(sr, arp, size,iface->name );
     if (result != 0){
       printf("Something wrong when sending packet \n");
     }
@@ -368,7 +368,40 @@ void sr_handlearp(struct sr_instance* sr,uint8_t * packet,unsigned int len,char*
     }
 }
 
+/* Send original packet back */
+int send_echo_reply(struct sr_instance* sr,char* iface, uint8_t * ori_packet, unsigned int len,struct sr_arpentry* arpentry){
 
+  uint8_t *temp_dhost = malloc(sizeof(uint8_t) * ETHER_ADDR_LEN);
+  memcpy(temp_dhost, ((sr_ethernet_hdr_t *)ori_packet)->ether_dhost, ETHER_ADDR_LEN);
+  memcpy(((sr_ethernet_hdr_t *)ori_packet)->ether_dhost, (uint8_t *) arpentry->mac, ETHER_ADDR_LEN);
+  memcpy(((sr_ethernet_hdr_t *)ori_packet)->ether_shost, temp_dhost, ETHER_ADDR_LEN);
+  free(temp_dhost);
+
+  sr_ip_hdr_t *ip_packet = (sr_ip_hdr_t*) (ori_packet + sizeof(sr_ethernet_hdr_t));
+
+  /* Modify IP addr */
+
+  uint32_t temp_ip_src = ip_packet->ip_src;
+  ip_packet->ip_src = ip_packet->ip_dst;
+  ip_packet->ip_dst = temp_ip_src;
+  ip_packet->ip_sum = 0;
+  ip_packet->ip_sum = cksum((uint8_t *) ip_packet, sizeof(sr_ip_hdr_t));
+
+  sr_icmp_hdr_t *icmp_packet = (sr_icmp_hdr_t *) (ori_packet + sizeof(sr_ethernet_hdr_t)+ sizeof(sr_ip_hdr_t));
+  icmp_packet->icmp_type = 0;
+  icmp_packet->icmp_code = 0;
+  icmp_packet->icmp_sum = 0;
+  /*icmp_packet->icmp_sum = cksum(icmp_packet, sizeof(sr_icmp_hdr_t));*/
+  /*copy...*/
+  icmp_packet->icmp_sum = cksum(icmp_packet, ntohs(ip_packet->ip_len) - (ip_packet->ip_hl * 4));
+
+  printf("Echo reply as folllow: \n");
+  print_hdrs(ori_packet, len);
+
+
+  return sr_send_packet(sr,ori_packet, /*uint8_t*/ /*unsigned int*/ len, iface);
+
+}
 
 void sr_handleip(struct sr_instance* sr,
         uint8_t * packet/* lent */,
@@ -411,8 +444,18 @@ void sr_handleip(struct sr_instance* sr,
             sr_icmp_hdr_t* icmp_header = (sr_icmp_hdr_t* )(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
             if(icmp_header->icmp_type == 8){
               printf("Received icmp echo , start processing..... \n");
-              send_icmp(sr, 0, 0, packet, iface->addr, len);
+              struct sr_rt* match = LPM(sr, ip_header->ip_src);
+              struct sr_arpentry * result = sr_arpcache_lookup(&sr->cache,match->gw.s_addr);
+              if (result){
+                int re = send_echo_reply(sr, interface, packet, len, result);
 
+                return ;
+
+
+              }else{
+                struct sr_arpreq * req=sr_arpcache_queuereq(&sr->cache,match->gw.s_addr,packet,len,interface);
+                handle_arpreq(sr,req);
+              }
               return;
             }
           } else {
