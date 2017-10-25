@@ -127,8 +127,8 @@ void send_icmp_3(struct sr_instance* sr, int type, int code , uint8_t* packet, c
   sr_icmp_t3_hdr_t* icmp_header = (sr_icmp_t3_hdr_t*) (icmp + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
 
   /*Setting ethernet header*/
-  memcpy(e_header->ether_shost, 0, ETHER_ADDR_LEN);
-  memcpy(e_header->ether_dhost, 0, ETHER_ADDR_LEN);
+  memset(e_header->ether_shost, 0, ETHER_ADDR_LEN);
+  memset(e_header->ether_dhost, 0, ETHER_ADDR_LEN);
   e_header->ether_type = htons(ethertype_ip);
 
   /*Setting ip header*/
@@ -192,10 +192,10 @@ void send_icmp(struct sr_instance* sr, int type, int code , uint8_t* packet, cha
     sr_ethernet_hdr_t *e_header = (sr_ethernet_hdr_t *) icmp;
     sr_ip_hdr_t *ip_header = (sr_ip_hdr_t *) (icmp + sizeof(sr_ethernet_hdr_t));
     sr_icmp_hdr_t* icmp_header = (sr_icmp_hdr_t*) (icmp + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
-
+    printf("iam here3 \n");
     /*Setting ethernet header*/
-    memcpy(e_header->ether_shost, 0, ETHER_ADDR_LEN);
-    memcpy(e_header->ether_dhost, 0, ETHER_ADDR_LEN);
+    memset(e_header->ether_shost, 0, ETHER_ADDR_LEN);
+    memset(e_header->ether_dhost, 0, ETHER_ADDR_LEN);
     e_header->ether_type = htons(ethertype_ip);
 
     /*Setting ip header*/
