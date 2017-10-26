@@ -23,7 +23,8 @@ void handle_arpreq(struct sr_instance *sr, struct sr_arpreq * req){
             printf("handel_qrpreq >5 sending ICMP unreachable \n");
             struct sr_packet * cur = req ->packets;
             while(cur){
-                send_icmp_3(sr, 3, 1 , cur->buf, cur->iface, cur->len);
+
+                send_icmp_3(sr, 3, 1, cur->buf,cur->len);
                 cur = cur->next;
             }
             sr_arpreq_destroy(&sr->cache, req);
@@ -31,7 +32,38 @@ void handle_arpreq(struct sr_instance *sr, struct sr_arpreq * req){
             /*send arp request*/
             printf("handel_qrpreq sending arp \n");
 
-            send_arp(sr,req);
+            struct sr_if *iface = sr_get_interface(sr,req->packets->iface);
+            if (!interface){
+              return;
+            }
+            uint8_t* arp = (uint8_t*) malloc(sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t));
+            printf("Sending arp broadcast, start processing..... \n");
+            sr_arp_hdr_t *arp_header = (sr_arp_hdr_t*) (arp+ sizeof(struct sr_ethernet_hdr));
+            sr_ethernet_hdr_t *eth_header = (sr_ethernet_hdr_t*) arp;
+            struct sr_if* iface = sr_get_interface(sr, req->packets->iface);
+
+            /* setting eth_header*/
+            memset(eth_header->ether_dhost, 255, ETHER_ADDR_LEN);
+            memcpy(eth_header->ether_shost, iface->addr, ETHER_ADDR_LEN);
+            eth_header->ether_type = htons(ethertype_arp);
+
+            /* setting arp_header*/
+            arp_header-> ar_hrd = htons(arp_hrd_ethernet);
+            arp_header-> ar_pro = htons(ethertype_ip);
+            arp_header-> ar_hln = ETHER_ADDR_LEN;
+            arp_header-> ar_pln = 4;
+            arp_header-> ar_op = htons(arp_op_request);
+            memcpy(arp_header-> ar_sha, iface->addr, ETHER_ADDR_LEN);
+            arp_header-> ar_sip = iface->ip;
+            memset(arp_header-> ar_tha, 0,ETHER_ADDR_LEN);
+            arp_header-> ar_tip = req->ip;
+
+            int size = sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t);
+            int result =  sr_send_packet(sr, arp, size,iface->name );
+            if (result != 0){
+              printf("Something wrong when sending packet \n");
+            }
+            free(arp);
 
             req->sent = now;
             req->times_sent++;
