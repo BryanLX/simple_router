@@ -78,10 +78,14 @@ void handle_arpreq(struct sr_instance *sr, struct sr_arpreq * req){
 */
 void sr_arpcache_sweepreqs(struct sr_instance *sr) {
     /* Fill this in */
-    struct sr_arpreq * cur = sr->cache.requests;
-    while(cur ){
-      handle_arpreq(sr, cur);
-      cur = cur->next;
+    struct sr_arpreq *request  = sr->cache.requests;
+
+    struct sr_arpreq *next = NULL;
+
+    while (request) {
+        next = request->next;
+        handle_arpreq(sr, request);
+        request = next;
     }
 }
 
