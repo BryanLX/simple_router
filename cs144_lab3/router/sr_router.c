@@ -120,14 +120,16 @@ void send_icmp(struct sr_instance* sr, int type, int code , uint8_t* packet, uns
   uint32_t temp = ip_hdr->ip_dst;
   ip_hdr->ip_dst = ip_hdr->ip_src;
   ip_hdr->ip_src = temp;
+  ip_hdr ->ip_sum =0;
+  ip_hdr ->ip_sum = cksum((const void*)ip_hdr, sizeof(sr_ip_hdr_t));
 
 
   /*Setting ICMP*/
   icmp_hdr->icmp_type = type;
   icmp_hdr->icmp_code = code;
   icmp_hdr->icmp_sum = 0;
-  icmp_hdr->icmp_sum = cksum((const void*)icmp_hdr,ntohs(ip_hdr->ip_len) - (ip_hdr->ip_hl * 4));
-  ip_hdr ->ip_sum = cksum((const void*)ip_hdr, sizeof(sr_ip_hdr_t));
+  icmp_hdr->icmp_sum = cksum((const void*)icmp_hdr,sr_icmp_hdr_t);
+
   /*send the packet*/
   handle_packet(sr,packet,len,out,match->gw.s_addr);
 
@@ -175,6 +177,8 @@ void send_icmp_3(struct sr_instance* sr, int type, int code , uint8_t* packet, u
   }else{
     ip_hdr->ip_src = out->ip;
   }
+  ip_hdr ->ip_sum = 0;
+  ip_hdr ->ip_sum = cksum(ip_hdr, sizeof(sr_ip_hdr_t));
 
 
   /*Setting ICMP*/
@@ -185,7 +189,7 @@ void send_icmp_3(struct sr_instance* sr, int type, int code , uint8_t* packet, u
   icmp_hdr->next_mtu = 0;
   memcpy(icmp_hdr->data, ip_old, ICMP_DATA_SIZE);
   icmp_hdr->icmp_sum = cksum(icmp_hdr, sizeof(sr_icmp_t3_hdr_t));
-  ip_hdr ->ip_sum = cksum(ip_hdr, sizeof(sr_ip_hdr_t));
+
   /*send the packet*/
   handle_packet(sr,icmp,sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t) + sizeof(sr_icmp_t3_hdr_t),out,match->gw.s_addr);
   free(icmp);
