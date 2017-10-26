@@ -33,14 +33,13 @@ void handle_arpreq(struct sr_instance *sr, struct sr_arpreq * req){
             printf("handel_qrpreq sending arp \n");
 
             struct sr_if *iface = sr_get_interface(sr,req->packets->iface);
-            if (!interface){
+            if (!iface){
               return;
             }
             uint8_t* arp = (uint8_t*) malloc(sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t));
             printf("Sending arp broadcast, start processing..... \n");
             sr_arp_hdr_t *arp_header = (sr_arp_hdr_t*) (arp+ sizeof(struct sr_ethernet_hdr));
             sr_ethernet_hdr_t *eth_header = (sr_ethernet_hdr_t*) arp;
-            struct sr_if* iface = sr_get_interface(sr, req->packets->iface);
 
             /* setting eth_header*/
             memset(eth_header->ether_dhost, 255, ETHER_ADDR_LEN);

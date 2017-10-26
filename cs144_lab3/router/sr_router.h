@@ -74,7 +74,7 @@ void sr_set_ether_ip(struct sr_instance* , uint32_t );
 void sr_set_ether_addr(struct sr_instance* , const unsigned char* );
 void sr_print_if_list(struct sr_instance* );
 struct sr_rt *LPM(struct sr_instance *sr, uint32_t ip);
-void handle_packet(struct sr_instance *sr,uint8_t *packet,unsigned int len,struct sr_if *interface,uint32_t ip,struct sr_rt *match);
+void handle_packet(struct sr_instance *sr,uint8_t *packet,unsigned int len,struct sr_if *interface,uint32_t ip);
 void send_icmp(struct sr_instance* sr, int type, int code , uint8_t* packet, unsigned int len);
 void send_icmp_3(struct sr_instance* sr, int type, int code , uint8_t* packet, unsigned int len);
 void send_arp(struct sr_instance *sr, struct sr_arpreq * req);
