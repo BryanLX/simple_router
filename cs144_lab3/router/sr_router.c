@@ -213,7 +213,7 @@ void send_arp(struct sr_instance *sr, struct sr_arpreq * req){
     arp_header-> ar_op = htons(arp_op_request);
     memcpy(arp_header-> ar_sha, iface->addr, ETHER_ADDR_LEN);
     arp_header-> ar_sip = iface->ip;
-    memset(arp_header-> ar_tha, 0,ETHER_ADDR_LEN);
+    memset(arp_header-> ar_tha, 255,ETHER_ADDR_LEN);
     arp_header-> ar_tip = req->ip;
 
     int size = sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t);
