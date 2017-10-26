@@ -55,7 +55,7 @@ void sr_init(struct sr_instance* sr)
 struct sr_rt * LPM(struct sr_instance *sr,uint32_t  ip_dst){
 
 
-      struct sr_rt * result  = NULL;
+      struct sr_rt * result  = 0;
       struct sr_rt * cur = sr->routing_table;
       uint32_t max =0;
       while(cur){
@@ -103,6 +103,8 @@ void send_icmp(struct sr_instance* sr, int type, int code , uint8_t* packet, uns
   sr_ethernet_hdr_t * e_hdr = (sr_ethernet_hdr_t *) packet;
   sr_ip_hdr_t * ip_hdr = (sr_ip_hdr_t *) (packet + sizeof(struct sr_ethernet_hdr));
   sr_icmp_hdr_t *icmp_hdr = (sr_icmp_hdr_t *) (packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
+
+
   struct sr_rt *match = LPM(sr,ip_hdr->ip_src);
   if(!match){
     return;
@@ -182,8 +184,8 @@ void send_icmp_3(struct sr_instance* sr, int type, int code , uint8_t* packet, u
   icmp_hdr->unused = 0;
   icmp_hdr->next_mtu = 0;
   memcpy(icmp_hdr->data, ip_old, ICMP_DATA_SIZE);
-  icmp_hdr->icmp_sum = cksum((const void*)icmp_hdr, sizeof(sr_icmp_hdr_t));
-  ip_hdr ->ip_sum = cksum((const void*)ip_hdr, sizeof(sr_ip_hdr_t));
+  icmp_hdr->icmp_sum = cksum(icmp_hdr, sizeof(sr_icmp_t3_hdr_t));
+  ip_hdr ->ip_sum = cksum(ip_hdr, sizeof(sr_ip_hdr_t));
   /*send the packet*/
   handle_packet(sr,icmp,sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t) + sizeof(sr_icmp_t3_hdr_t),out,match->gw.s_addr);
   free(icmp);
