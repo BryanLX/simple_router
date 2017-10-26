@@ -124,7 +124,7 @@ void send_icmp(struct sr_instance* sr, int type, int code , uint8_t* packet, uns
   icmp_hdr->icmp_type = type;
   icmp_hdr->icmp_code = code;
   icmp_hdr->icmp_sum = 0;
-  icmp_hdr->icmp_sum = cksum((const void*)icmp_hdr, sizeof(sr_icmp_hdr_t));
+  icmp_hdr->icmp_sum = cksum((const void*)icmp_hdr,ntohs(ip_hdr->ip_len) - (ip_hdr->ip_hl * 4));
   ip_hdr ->ip_sum = cksum((const void*)ip_hdr, sizeof(sr_ip_hdr_t));
   /*send the packet*/
   handle_packet(sr,packet,len,out,match->gw.s_addr);
@@ -239,15 +239,25 @@ void sr_handlearp(struct sr_instance* sr,uint8_t * packet,unsigned int len,char*
     sr_ethernet_hdr_t * ethernet_header = (sr_ethernet_hdr_t *)packet;
     sr_arp_hdr_t* a_header = (sr_arp_hdr_t *) (sizeof(sr_ethernet_hdr_t)+packet);
     unsigned short op = a_header->ar_op;
+
+    if (ntohs(a_header->ar_hrd) != arp_hrd_ethernet)
+    {
+       return;
+    }
+    /* check  */
+    if (ntohs(a_header->ar_pro) != ethertype_ip)
+    {
+        return;
+    }
     struct sr_if * the_one=get_iface(sr, a_header->ar_tip);
-    struct sr_if *sr_interface = sr_get_interface(sr, interface);
-
-
+    if(!the_one){
+      return;
+    }
     if(arp_op_request == ntohs(op) ){
       /* handle arp request*/
       printf("Received arp request, start processing..... \n");
       uint8_t *arp_reply = (uint8_t *)malloc(len);
-
+      struct sr_if *sr_interface = sr_get_interface(sr, interface);
       sr_arp_hdr_t *arp_header = (sr_arp_hdr_t*) (arp_reply + sizeof(struct sr_ethernet_hdr));
       sr_ethernet_hdr_t *eth_header = (sr_ethernet_hdr_t*) arp_reply;
       memcpy(arp_reply,packet,len);
@@ -265,9 +275,7 @@ void sr_handlearp(struct sr_instance* sr,uint8_t * packet,unsigned int len,char*
       memcpy(arp_header-> ar_tha, a_header->ar_sha,ETHER_ADDR_LEN);
       arp_header-> ar_tip = a_header->ar_sip;
 
-      int size = sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t);
       printf("Sending replay: \n");
-      sr_send_packet(sr, arp_reply, size, the_one->name);
       handle_packet(sr,arp_reply,len,sr_interface,a_header->ar_sip);
       free(arp_reply);
     }else if (arp_op_reply == ntohs(op) ){
@@ -300,7 +308,6 @@ void sr_handlearp(struct sr_instance* sr,uint8_t * packet,unsigned int len,char*
         printf("Unkown arp opcode \n");
     }
 }
-
 
 
 void sr_handleip(struct sr_instance* sr,
@@ -338,21 +345,24 @@ void sr_handleip(struct sr_instance* sr,
               send_icmp(sr, 0, 0, packet,len);
               return;
             }
-          } else {
+          } else if(ip_header->ip_p==6||ip_header->ip_p==11){
             printf("Sending port unreachable\n");
             send_icmp_3(sr, 3, 3, packet,len);
             return;
+          }else{
+
           }
       }else{
           printf("Received ip not for me, start processing..... \n");
           /*check rtable, perform longest prefix match*/
           ip_header->ip_ttl--;
-          ip_header->ip_sum = 0;
-          ip_header->ip_sum = cksum(ip_header, sizeof(struct sr_ip_hdr));
+
           if(ip_header->ip_ttl <1){
             send_icmp_3(sr,11, 0, packet,len);
             return;
           }
+          ip_header->ip_sum = 0;
+          ip_header->ip_sum = cksum(ip_header, sizeof(struct sr_ip_hdr));
           struct sr_rt* result = LPM(sr,ip_header->ip_dst);
 
           if(result){
@@ -398,6 +408,9 @@ void sr_handlepacket(struct sr_instance* sr,
 
     /* fill in code here */
     print_hdrs(packet,len);
+    if (len < sizeof(sr_ethernet_hdr_t)){
+        return;
+    }
     /*First decide which type it is*/
     uint16_t type = ethertype(packet);
     printf("Type is : %d\n", type);

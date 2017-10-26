@@ -16,15 +16,25 @@
 void handle_arpreq(struct sr_instance *sr, struct sr_arpreq * req){
     time_t now;
     time(&now);
-    if (difftime(now, req->sent) > 1.0){
-        if (req->times_sent > 5){
+    if (difftime(now, req->sent) >= 1.0){
+        if (req->times_sent >= 5){
             /*send icmp host unreachable to source addr of all pkts waiting
              on this request*/
             printf("handel_qrpreq >5 sending ICMP unreachable \n");
             struct sr_packet * cur = req ->packets;
             while(cur){
-
-                send_icmp_3(sr, 3, 1, cur->buf,cur->len);
+                sr_ethernet_hdr_t *e_header = (sr_ethernet_hdr_t *)(cur->buf);
+                struct sr_if *temp = sr->if_list;
+                int tf  =0;
+                while(temp){
+                  if (memcmp(temp->addr,e_header->ether_dhost, ETHER_ADDR_LEN) == 0) {
+                      tf =1;
+                  }
+                  temp = temp->next;
+                }
+                if(tf != 0){
+                  send_icmp_3(sr, 3, 1, cur->buf,cur->len);
+                }
                 cur = cur->next;
             }
             sr_arpreq_destroy(&sr->cache, req);
@@ -42,7 +52,7 @@ void handle_arpreq(struct sr_instance *sr, struct sr_arpreq * req){
             sr_ethernet_hdr_t *eth_header = (sr_ethernet_hdr_t*) arp;
 
             /* setting eth_header*/
-            memset(eth_header->ether_dhost, 255, ETHER_ADDR_LEN);
+            memset(eth_header->ether_dhost, 0xFF, ETHER_ADDR_LEN);
             memcpy(eth_header->ether_shost, iface->addr, ETHER_ADDR_LEN);
             eth_header->ether_type = htons(ethertype_arp);
 
@@ -50,11 +60,11 @@ void handle_arpreq(struct sr_instance *sr, struct sr_arpreq * req){
             arp_header-> ar_hrd = htons(arp_hrd_ethernet);
             arp_header-> ar_pro = htons(ethertype_ip);
             arp_header-> ar_hln = ETHER_ADDR_LEN;
-            arp_header-> ar_pln = 4;
+            arp_header-> ar_pln = sizeof(uint32_t);
             arp_header-> ar_op = htons(arp_op_request);
             memcpy(arp_header-> ar_sha, iface->addr, ETHER_ADDR_LEN);
             arp_header-> ar_sip = iface->ip;
-            memset(arp_header-> ar_tha, 0,ETHER_ADDR_LEN);
+            memset(arp_header-> ar_tha, 0x00,ETHER_ADDR_LEN);
             arp_header-> ar_tip = req->ip;
 
             int size = sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t);
@@ -77,15 +87,13 @@ void handle_arpreq(struct sr_instance *sr, struct sr_arpreq * req){
   See the comments in the header file for an idea of what it should look like.
 */
 void sr_arpcache_sweepreqs(struct sr_instance *sr) {
-    /* Fill this in */
-    struct sr_arpreq *request  = sr->cache.requests;
 
-    struct sr_arpreq *next = NULL;
-
-    while (request) {
-        next = request->next;
-        handle_arpreq(sr, request);
-        request = next;
+    struct sr_arpreq * cur = sr->cache.requests;
+    struct sr_arpreq * temp = NULL;
+    while(cur ){
+      temp = cur->next;
+      handle_arpreq(sr, cur);
+      cur = temp->next;
     }
 }
 
